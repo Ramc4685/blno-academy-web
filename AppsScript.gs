@@ -12,7 +12,7 @@
 
 var BLNO_API = {
   sheetId: "1kc8KTKXM2jBJIkXeEZoyBXHQ7fVfMYb3EiqkHJtOwAg",
-  expectedClientId: "PASTE_GOOGLE_OAUTH_CLIENT_ID_HERE",
+  expectedClientId: "776947524108-mb972fjd6gs9b813rt0tl80lhk8qej3l.apps.googleusercontent.com",
   adminEmails: ["ramchand4685@gmail.com"],
   coachEmails: {
     "gowtham@example.com": "Gowtham",
