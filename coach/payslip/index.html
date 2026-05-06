@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Coach Payslip | BLno Badminton Academy</title>
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../../css/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand-link" href="../../index.html"><span class="brand-mark">B</span><span>BLno Academy</span></a>
+      <nav class="nav-tabs">
+        <a href="../../coach.html">My Sessions</a>
+        <a class="active" href="./">Payslip</a>
+      </nav>
+      <div class="user-chip"><span data-user-email></span><button data-sign-out>Sign out</button></div>
+    </header>
+
+    <main class="page">
+      <section class="page-heading">
+        <div>
+          <h1>Payout History</h1>
+          <p>Kids count, expected revenue, payout percentage, and payout amount.</p>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Month</th><th>Kids</th><th>Expected revenue</th><th>Payout %</th><th>Payout</th></tr></thead>
+            <tbody id="coachPayslipRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="../../js/config.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/ui.js"></script>
+    <script src="../../js/coach.js"></script>
+  </body>
+</html>

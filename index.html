@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BLno Badminton Academy Portal</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body class="landing-page">
+    <main class="landing-shell">
+      <section class="landing-panel">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true">B</span>
+          <div>
+            <h1>BLno Badminton Academy</h1>
+            <p>Member portal for parents, coaches, and academy administration.</p>
+          </div>
+        </div>
+
+        <div class="signin-card">
+          <h2>Sign in to continue</h2>
+          <p>Use the Google account registered with the academy.</p>
+          <div id="googleSignIn"></div>
+          <div id="landingStatus" class="status-line"></div>
+        </div>
+
+        <div class="role-preview" aria-label="Portal areas">
+          <article>
+            <strong>Parents</strong>
+            <span>Kids, sessions, attendance, and dues.</span>
+          </article>
+          <article>
+            <strong>Coaches</strong>
+            <span>Session rosters, paid status, and payout.</span>
+          </article>
+          <article>
+            <strong>Admin</strong>
+            <span>Dashboard, dues, capacity, and coach payout.</span>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script>
+      const status = document.getElementById("landingStatus");
+
+      async function routeSignedInUser() {
+        try {
+          if (!Auth.getToken()) return;
+          if (!Api.isConfigured()) {
+            status.textContent = "Backend URL is not configured yet.";
+            return;
+          }
+          status.textContent = "Checking portal access...";
+          const me = await Api.get("me");
+          if (me.role === "admin") window.location.href = "admin.html";
+          else if (me.role === "coach") window.location.href = "coach.html";
+          else if (me.role === "parent") window.location.href = "parent.html";
+          else status.textContent = "Your Google account is not allowed for this portal.";
+        } catch (err) {
+          status.textContent = err.message;
+        }
+      }
+
+      Auth.renderGoogleButton("googleSignIn");
+      document.addEventListener("blno:signed-in", routeSignedInUser);
+      routeSignedInUser();
+    </script>
+  </body>
+</html>

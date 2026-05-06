@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard | BLno Badminton Academy</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand-link" href="index.html"><span class="brand-mark">B</span><span>BLno Academy</span></a>
+      <nav class="nav-tabs">
+        <a class="active" href="admin.html">Dashboard</a>
+        <a href="admin/dues.html">Dues</a>
+        <a href="admin/sessions.html">Sessions</a>
+        <a href="admin/coaches.html">Coaches</a>
+      </nav>
+      <div class="user-chip"><span data-user-email></span><button data-sign-out>Sign out</button></div>
+    </header>
+
+    <main class="page">
+      <section class="page-heading">
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p>KPIs pulled from the Sheet Dashboard tab.</p>
+        </div>
+        <label class="month-control">Month <input id="adminMonth" type="text" value="May-2026"></label>
+      </section>
+
+      <section id="adminStats" class="stat-grid"></section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Enrollment and Revenue Trend</h2>
+        </div>
+        <canvas id="trendChart" height="120"></canvas>
+      </section>
+
+      <section class="quick-links">
+        <a href="admin/dues.html">Outstanding dues</a>
+        <a href="admin/sessions.html">Session capacity</a>
+        <a href="admin/coaches.html">Coach payouts</a>
+      </section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/admin.js"></script>
+  </body>
+</html>

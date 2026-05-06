@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Coach Sessions | BLno Badminton Academy</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand-link" href="index.html"><span class="brand-mark">B</span><span>BLno Academy</span></a>
+      <nav class="nav-tabs">
+        <a class="active" href="coach.html">My Sessions</a>
+        <a href="coach/payslip/">Payslip</a>
+      </nav>
+      <div class="user-chip"><span data-user-email></span><button data-sign-out>Sign out</button></div>
+    </header>
+
+    <main class="page">
+      <section class="page-heading">
+        <div>
+          <h1>My Sessions</h1>
+          <p>Current month rosters with payment and attendance status.</p>
+        </div>
+        <label class="month-control">Month <input id="coachMonth" type="text" value="May-2026"></label>
+      </section>
+
+      <section class="stat-grid">
+        <article class="stat-card"><span>Expected payout</span><strong id="coachPayout">$0</strong></article>
+        <article class="stat-card"><span>Sessions</span><strong id="coachSessionCount">0</strong></article>
+      </section>
+
+      <div id="coachTabs" class="segmented"></div>
+      <section id="coachSessions" class="session-stack"></section>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/coach.js"></script>
+  </body>
+</html>

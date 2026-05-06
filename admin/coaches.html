@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Coach Payouts | BLno Badminton Academy</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../css/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand-link" href="../index.html"><span class="brand-mark">B</span><span>BLno Academy</span></a>
+      <nav class="nav-tabs">
+        <a href="../admin.html">Dashboard</a>
+        <a href="dues.html">Dues</a>
+        <a href="sessions.html">Sessions</a>
+        <a class="active" href="coaches.html">Coaches</a>
+      </nav>
+      <div class="user-chip"><span data-user-email></span><button data-sign-out>Sign out</button></div>
+    </header>
+
+    <main class="page">
+      <section class="page-heading">
+        <div>
+          <h1>Coach Payouts</h1>
+          <p>Monthly payout summary from Coach_Payslip.</p>
+        </div>
+        <label class="month-control">Month <input id="coachesMonth" type="text" value="May-2026"></label>
+      </section>
+      <section class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Coach</th><th>Month</th><th>Kids</th><th>Expected revenue</th><th>Payout %</th><th>Payout</th></tr></thead>
+            <tbody id="coachPayoutRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/ui.js"></script>
+    <script src="../js/admin.js"></script>
+  </body>
+</html>
