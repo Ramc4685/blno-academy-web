@@ -77,7 +77,7 @@ function blnoJson_(payload, callback) {
  * Run this once from the Apps Script editor after adding WebApi.gs.
  * It forces Apps Script to ask for SpreadsheetApp and UrlFetchApp permissions.
  */
-function blnoAuthorizeWebApiServices_() {
+function blnoAuthorizeWebApiServices() {
   SpreadsheetApp.openById(BLNO_API.sheetId).getName();
   UrlFetchApp.fetch("https://oauth2.googleapis.com/tokeninfo", { muteHttpExceptions: true });
   Logger.log("BLno Web API services authorized.");

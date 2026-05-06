@@ -44,7 +44,7 @@ The OAuth Client ID is public. Do not put a client secret in this site.
    - `BLNO_API.coachEmails`
    - `BLNO_API.adminEmails` if needed
 9. Save the project.
-10. Select `blnoAuthorizeWebApiServices_` from the function dropdown and click `Run` once. Approve permissions.
+10. Select `blnoAuthorizeWebApiServices` from the function dropdown and click `Run` once. Approve permissions.
 11. Deploy with `Deploy -> New deployment -> Web app`, or edit the existing deployment and create a new version.
 12. Set `Execute as: Me`.
 13. Prefer access `Anyone`. The API still verifies every Google ID token itself. If your Google Workspace only allows `Anyone with Google account`, the frontend includes an Apps Script-compatible JSONP fallback.
