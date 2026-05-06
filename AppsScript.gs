@@ -36,8 +36,8 @@ var BLNO_API = {
 };
 
 function doGet(e) {
+  var params = e && e.parameter ? e.parameter : {};
   try {
-    var params = e && e.parameter ? e.parameter : {};
     var action = params.action || "me";
     var auth = blnoAuthorize_(params.id_token);
     blnoLogCall_(auth.email, action);
@@ -52,16 +52,35 @@ function doGet(e) {
     else if (action === "admin_coaches") data = blnoAdminCoaches_(auth, params.month || BLNO_API.currentMonth);
     else throw new Error("Unknown action: " + action);
 
-    return blnoJson_({ ok: true, data: data });
+    return blnoJson_({ ok: true, data: data }, params.callback);
   } catch (err) {
-    return blnoJson_({ ok: false, error: err && err.message ? err.message : String(err) });
+    return blnoJson_({ ok: false, error: err && err.message ? err.message : String(err) }, params.callback);
   }
 }
 
-function blnoJson_(payload) {
+function blnoJson_(payload, callback) {
+  if (callback) {
+    if (!/^[A-Za-z_$][0-9A-Za-z_$]*(\.[A-Za-z_$][0-9A-Za-z_$]*)*$/.test(callback)) {
+      payload = { ok: false, error: "Invalid JSONP callback." };
+      callback = "Function";
+    }
+    return ContentService
+      .createTextOutput(callback + "(" + JSON.stringify(payload) + ");")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService
     .createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Run this once from the Apps Script editor after adding WebApi.gs.
+ * It forces Apps Script to ask for SpreadsheetApp and UrlFetchApp permissions.
+ */
+function blnoAuthorizeWebApiServices_() {
+  SpreadsheetApp.openById(BLNO_API.sheetId).getName();
+  UrlFetchApp.fetch("https://oauth2.googleapis.com/tokeninfo", { muteHttpExceptions: true });
+  Logger.log("BLno Web API services authorized.");
 }
 
 function blnoAuthorize_(token) {

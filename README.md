@@ -33,14 +33,22 @@ The OAuth Client ID is public. Do not put a client secret in this site.
 3. Keep your existing large `Code.gs` automation file. Do not replace it.
 4. Add a new Apps Script file named `WebApi.gs`.
 5. Paste the contents of `AppsScript.gs` from this repo into `WebApi.gs`.
-6. Update:
+6. In `Project Settings`, enable `Show "appsscript.json" manifest file in editor`.
+7. Open `appsscript.json` and make sure these scopes are present:
+   - `https://www.googleapis.com/auth/spreadsheets`
+   - `https://www.googleapis.com/auth/script.external_request`
+   - `https://www.googleapis.com/auth/script.container.ui`
+   - `https://www.googleapis.com/auth/script.scriptapp`
+8. Update:
    - `BLNO_API.expectedClientId`
    - `BLNO_API.coachEmails`
    - `BLNO_API.adminEmails` if needed
-7. Deploy with `Deploy -> New deployment -> Web app`, or edit the existing deployment and create a new version.
-8. Set `Execute as: Me`.
-9. Set access to `Anyone with Google account`.
-10. Paste the deployment URL into `js/config.js`.
+9. Save the project.
+10. Select `blnoAuthorizeWebApiServices_` from the function dropdown and click `Run` once. Approve permissions.
+11. Deploy with `Deploy -> New deployment -> Web app`, or edit the existing deployment and create a new version.
+12. Set `Execute as: Me`.
+13. Prefer access `Anyone`. The API still verifies every Google ID token itself. If your Google Workspace only allows `Anyone with Google account`, the frontend includes an Apps Script-compatible JSONP fallback.
+14. Paste the deployment URL into `js/config.js`.
 
 Apps Script runs all `.gs` files in one project together. Your existing automation file provides the Sheet menu and repair tools; the added `WebApi.gs` provides the `doGet(e)` endpoint for the website.
 
