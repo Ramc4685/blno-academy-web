@@ -1,8 +1,13 @@
 /**
  * BLno Badminton Academy — Read-only Web App API
  *
- * Paste this into the existing Sheet Apps Script project alongside the
- * automation code. It intentionally avoids the existing global constants.
+ * IMPORTANT:
+ *   Do NOT replace your existing large Code.gs automation file with this.
+ *   Keep the automation file exactly as-is, then add this API as a second
+ *   Apps Script file, for example "WebApi.gs", in the same script project.
+ *
+ * This file intentionally avoids your existing global constants and helper
+ * names so it can live alongside the automation code.
  *
  * Required edits before deployment:
  *   - BLNO_API.expectedClientId

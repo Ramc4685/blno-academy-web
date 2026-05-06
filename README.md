@@ -30,15 +30,23 @@ The OAuth Client ID is public. Do not put a client secret in this site.
 
 1. Open the existing Sheet: `1kc8KTKXM2jBJIkXeEZoyBXHQ7fVfMYb3EiqkHJtOwAg`.
 2. Go to `Extensions -> Apps Script`.
-3. Add the contents of `AppsScript.gs` alongside the existing automation code.
-4. Update:
+3. Keep your existing large `Code.gs` automation file. Do not replace it.
+4. Add a new Apps Script file named `WebApi.gs`.
+5. Paste the contents of `AppsScript.gs` from this repo into `WebApi.gs`.
+6. Update:
    - `BLNO_API.expectedClientId`
    - `BLNO_API.coachEmails`
    - `BLNO_API.adminEmails` if needed
-5. Deploy with `Deploy -> New deployment -> Web app`.
-6. Set `Execute as: Me`.
-7. Set access to `Anyone with Google account`.
-8. Paste the deployment URL into `js/config.js`.
+7. Deploy with `Deploy -> New deployment -> Web app`, or edit the existing deployment and create a new version.
+8. Set `Execute as: Me`.
+9. Set access to `Anyone with Google account`.
+10. Paste the deployment URL into `js/config.js`.
+
+Apps Script runs all `.gs` files in one project together. Your existing automation file provides the Sheet menu and repair tools; the added `WebApi.gs` provides the `doGet(e)` endpoint for the website.
+
+The API file is intentionally much smaller than your automation file because it only handles authentication, role filtering, and read-only JSON endpoints.
+
+Only one `doGet(e)` function can exist in the project. Your pasted automation file does not define `doGet`, so this API file can be added safely.
 
 `ContentService` does not provide a supported API for arbitrary custom CORS headers. This implementation uses a read-only `GET` Web App endpoint returning JSON, which is the standard Apps Script pattern for browser-facing static sites.
 
