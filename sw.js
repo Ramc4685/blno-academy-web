@@ -10,6 +10,8 @@ const ASSETS = [
   "./admin/dues.html",
   "./admin/sessions.html",
   "./admin/coaches.html",
+  "./admin/payments.html",
+  "./admin/attendance.html",
   "./css/styles.css",
   "./js/config.js",
   "./js/auth.js",

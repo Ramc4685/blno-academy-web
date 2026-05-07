@@ -75,5 +75,33 @@
     }
   }
 
-  window.Api = { get, isConfigured };
+  async function post(action, payload) {
+    if (!isConfigured()) {
+      throw new Error("Add your Apps Script Web App URL in js/config.js.");
+    }
+    const token = await window.Auth.requireToken();
+    const body = { action, id_token: token, ...(payload || {}) };
+
+    try {
+      const response = await fetch(getConfig().BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(body)
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "Request failed.");
+      }
+      return result.data;
+    } catch (err) {
+      const params = { ...(payload || {}) };
+      if (Array.isArray(params.entries)) params.entries = JSON.stringify(params.entries);
+      if (err instanceof TypeError || String(err.message || "").includes("fetch")) {
+        return jsonp(action, params, token);
+      }
+      throw err;
+    }
+  }
+
+  window.Api = { get, post, isConfigured };
 })();

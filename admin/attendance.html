@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Coach Payouts | BLno Badminton Academy</title>
+    <title>Mark Attendance | BLno Badminton Academy</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../css/styles.css">
   </head>
@@ -14,9 +14,9 @@
         <a href="../admin.html">Dashboard</a>
         <a href="dues.html">Dues</a>
         <a href="sessions.html">Sessions</a>
-        <a class="active" href="coaches.html">Coaches</a>
+        <a href="coaches.html">Coaches</a>
         <a href="payments.html">Payments</a>
-        <a href="attendance.html">Attendance</a>
+        <a class="active" href="attendance.html">Attendance</a>
       </nav>
       <div class="user-chip"><span data-user-email></span><button data-sign-out>Sign out</button></div>
     </header>
@@ -24,18 +24,27 @@
     <main class="page">
       <section class="page-heading">
         <div>
-          <h1>Coach Payouts</h1>
-          <p>Monthly payout summary from Coach_Payslip.</p>
+          <h1>Mark Attendance</h1>
+          <p>Write attendance rows to Attendance_Log with one row per kid.</p>
         </div>
-        <label class="month-control">Month <input id="coachesMonth" type="text" value="May-2026"></label>
       </section>
+
       <section class="panel">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Coach</th><th>Month</th><th>Kids</th><th>Expected revenue</th><th>Payout %</th><th>Payout</th></tr></thead>
-            <tbody id="coachPayoutRows"></tbody>
-          </table>
-        </div>
+        <form id="attendanceForm">
+          <div class="form-grid">
+            <label>Date<input id="attendanceDate" type="date" required></label>
+            <label>Month<select id="attendanceMonth" required></select></label>
+            <label class="span-2">Session<select id="attendanceSession" required></select></label>
+          </div>
+          <div class="table-wrap attendance-table">
+            <table>
+              <thead><tr><th>Kid</th><th>Status</th><th>Note</th></tr></thead>
+              <tbody id="attendanceRows"></tbody>
+            </table>
+          </div>
+          <button class="primary-action" type="submit">Save attendance</button>
+        </form>
+        <div id="attendanceStatus" class="status-line"></div>
       </section>
     </main>
 

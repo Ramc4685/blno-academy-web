@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Coach Payouts | BLno Badminton Academy</title>
+    <title>Mark Payments | BLno Badminton Academy</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../css/styles.css">
   </head>
@@ -14,8 +14,8 @@
         <a href="../admin.html">Dashboard</a>
         <a href="dues.html">Dues</a>
         <a href="sessions.html">Sessions</a>
-        <a class="active" href="coaches.html">Coaches</a>
-        <a href="payments.html">Payments</a>
+        <a href="coaches.html">Coaches</a>
+        <a class="active" href="payments.html">Payments</a>
         <a href="attendance.html">Attendance</a>
       </nav>
       <div class="user-chip"><span data-user-email></span><button data-sign-out>Sign out</button></div>
@@ -24,18 +24,22 @@
     <main class="page">
       <section class="page-heading">
         <div>
-          <h1>Coach Payouts</h1>
-          <p>Monthly payout summary from Coach_Payslip.</p>
+          <h1>Mark Payments</h1>
+          <p>Update the selected month Pay cell and append a payment audit row.</p>
         </div>
-        <label class="month-control">Month <input id="coachesMonth" type="text" value="May-2026"></label>
       </section>
+
       <section class="panel">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Coach</th><th>Month</th><th>Kids</th><th>Expected revenue</th><th>Payout %</th><th>Payout</th></tr></thead>
-            <tbody id="coachPayoutRows"></tbody>
-          </table>
-        </div>
+        <form id="paymentForm" class="form-grid">
+          <label>Kid<select id="paymentKid" required></select></label>
+          <label>Month<select id="paymentMonth" required></select></label>
+          <label>Amount<input id="paymentAmount" type="number" min="0" step="1" required></label>
+          <label>Method<select id="paymentMethod"><option>Zelle</option><option>Cash</option><option>Check</option><option>Other</option></select></label>
+          <label class="span-2">Note<input id="paymentNote" type="text" placeholder="Optional memo"></label>
+          <button class="primary-action" type="submit">Mark payment</button>
+        </form>
+        <div id="paymentCurrent" class="status-line"></div>
+        <div id="paymentStatus" class="status-line"></div>
       </section>
     </main>
 

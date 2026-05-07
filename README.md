@@ -8,6 +8,8 @@ Static, read-only member portal for GitHub Pages with a Google Apps Script Web A
 - `parent.html` and `parent/history/` show kid status, dues, attendance, and monthly history.
 - `coach.html` and `coach/payslip/` show coach rosters and payout history.
 - `admin.html`, `admin/dues.html`, `admin/sessions.html`, and `admin/coaches.html` show admin views.
+- `admin/payments.html` lets admin mark monthly payments.
+- `admin/attendance.html` lets admin mark session attendance.
 - `AppsScript.gs` is the read-only API layer to paste into the existing Apps Script project.
 - `js/config.js` stores public frontend configuration.
 
@@ -88,12 +90,20 @@ The Apps Script `doGet(e)` supports:
 - `action=admin_dues`
 - `action=admin_sessions&month=May-2026`
 - `action=admin_coaches&month=May-2026`
+- `action=admin_kids`
+- `action=mark_payment`
+- `action=mark_attendance`
+- `action=send_due_reminder`
 
-Each request includes `id_token=<google_id_token>`. Apps Script verifies the token with Google, checks the audience against `BLNO_API.expectedClientId`, then maps role by admin email, coach email, or parent email in `Roster!E`.
+`doPost(e)` also supports write actions: `mark_payment`, `mark_attendance`, and `send_due_reminder`. Each request includes `id_token=<google_id_token>`. Apps Script verifies the token with Google, checks the audience against `BLNO_API.expectedClientId`, then maps role by admin email, coach email, or parent email in `Roster!E`.
+
+Write actions append to `Audit_Log`. Payment writes also append to `Payment_Log`.
 
 ## Notes
 
 - The frontend does not recompute tuition, proration, or dues. It displays values returned by Apps Script from the Sheet.
+- Admin payment writes update the selected Roster month `Pay` cell; Sheet formulas remain responsible for `Due`.
+- Admin attendance writes upsert rows in `Attendance_Log` by date + session + kid.
 - Parent results are filtered server-side by verified email.
 - Coach results are filtered server-side by allowlisted coach email.
 - Admin-only endpoints require `BLNO_API.adminEmails`.

@@ -1,5 +1,6 @@
 (async function () {
   const path = window.location.pathname;
+  let adminContext = null;
 
   function defaultMonth(id) {
     const el = UI.byId(id);
@@ -20,7 +21,8 @@
     const trend = data.trend || [];
     const canvas = UI.byId("trendChart");
     if (!canvas || !window.Chart) return;
-    new Chart(canvas, {
+    if (window.blnoTrendChart) window.blnoTrendChart.destroy();
+    window.blnoTrendChart = new Chart(canvas, {
       type: "line",
       data: {
         labels: trend.map((row) => row.month),
@@ -55,6 +57,7 @@
                 <strong>WhatsApp reminder</strong>
                 <span>${UI.escapeHtml(row.message || "")}</span>
                 <button class="copy-button" data-copy-message="${index}">Copy text</button>
+                <a class="copy-button" target="_blank" rel="noopener" data-whatsapp-message="${index}" href="${whatsAppLink(row.phone, row.message)}">Open WhatsApp</a>
               </div>
             </td>
           </tr>`).join("")
@@ -74,6 +77,18 @@
         button.textContent = "Copied";
       });
     });
+    target.querySelectorAll("[data-whatsapp-message]").forEach((link) => {
+      link.addEventListener("click", () => {
+        const row = rows[Number(link.dataset.whatsappMessage)];
+        Api.post("send_due_reminder", { kid: row.kid, phone: row.phone, message: row.message }).catch(() => {});
+      });
+    });
+  }
+
+  function whatsAppLink(phone, message) {
+    const digits = String(phone || "").replace(/\D/g, "");
+    const normalized = digits.length === 10 ? `1${digits}` : digits;
+    return `https://wa.me/${normalized}?text=${encodeURIComponent(message || "")}`;
   }
 
   function renderSessions(rows) {
@@ -119,10 +134,130 @@
       : `<tr><td colspan="6">${UI.emptyState("No coach payout rows found.")}</td></tr>`;
   }
 
+  async function loadAdminContext() {
+    if (adminContext) return adminContext;
+    adminContext = await Api.get("admin_kids");
+    return adminContext;
+  }
+
+  function populateSelect(select, items, labelFn, valueFn) {
+    if (!select) return;
+    select.innerHTML = items.map((item) => {
+      const label = labelFn ? labelFn(item) : item;
+      const value = valueFn ? valueFn(item) : item;
+      return `<option value="${UI.escapeHtml(value)}">${UI.escapeHtml(label)}</option>`;
+    }).join("");
+  }
+
+  function currentKidMonth(kidName, month) {
+    const kid = (adminContext?.kids || []).find((row) => row.name === kidName);
+    if (!kid) return null;
+    const monthly = (kid.monthly || []).find((row) => row.month === month);
+    return { kid, monthly };
+  }
+
+  function updatePaymentCurrent() {
+    const kidName = UI.byId("paymentKid")?.value;
+    const month = UI.byId("paymentMonth")?.value;
+    const current = currentKidMonth(kidName, month);
+    const target = UI.byId("paymentCurrent");
+    if (!target || !current) return;
+    target.textContent = `${current.kid.parent || ""} · Paid ${UI.money(current.monthly?.paid || 0)} · Due ${UI.money(current.monthly?.due || 0)}`;
+    const amount = UI.byId("paymentAmount");
+    if (amount && !amount.value) amount.value = Number(current.monthly?.paid || 0);
+  }
+
+  async function initPayments() {
+    const status = UI.byId("paymentStatus");
+    const ctx = await loadAdminContext();
+    populateSelect(UI.byId("paymentKid"), ctx.kids, (kid) => `${kid.name} · ${kid.parent || ""}`, (kid) => kid.name);
+    populateSelect(UI.byId("paymentMonth"), ctx.months);
+    updatePaymentCurrent();
+    ["paymentKid", "paymentMonth"].forEach((id) => UI.byId(id)?.addEventListener("change", updatePaymentCurrent));
+    UI.byId("paymentForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      status.textContent = "Saving payment...";
+      try {
+        const result = await Api.post("mark_payment", {
+          kid: UI.byId("paymentKid").value,
+          month: UI.byId("paymentMonth").value,
+          amount: UI.byId("paymentAmount").value,
+          method: UI.byId("paymentMethod").value,
+          note: UI.byId("paymentNote").value
+        });
+        adminContext = null;
+        status.textContent = `Saved ${UI.money(result.paid)} for ${result.kid} (${result.month}).`;
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+  }
+
+  function setToday() {
+    const input = UI.byId("attendanceDate");
+    if (input && !input.value) input.value = new Date().toISOString().slice(0, 10);
+  }
+
+  function renderAttendanceRows() {
+    const session = UI.byId("attendanceSession")?.value;
+    const month = UI.byId("attendanceMonth")?.value;
+    const target = UI.byId("attendanceRows");
+    if (!target) return;
+    const kids = (adminContext?.kids || []).filter((kid) => {
+      const monthly = (kid.monthly || []).find((row) => row.month === month);
+      return kid.session === session && monthly && monthly.enrolled && String(kid.status || "").toLowerCase() !== "dropped";
+    });
+    target.innerHTML = kids.length ? kids.map((kid) => `
+      <tr data-attendance-kid="${UI.escapeHtml(kid.name)}">
+        <td>${UI.escapeHtml(kid.name)}</td>
+        <td>
+          <select data-attendance-status>
+            <option>Present</option>
+            <option>Absent</option>
+            <option>Late</option>
+            <option>Make-up</option>
+          </select>
+        </td>
+        <td><input data-attendance-note type="text" placeholder="Optional"></td>
+      </tr>`).join("") : `<tr><td colspan="3">${UI.emptyState("No enrolled kids found for this session/month.")}</td></tr>`;
+  }
+
+  async function initAttendance() {
+    const status = UI.byId("attendanceStatus");
+    const ctx = await loadAdminContext();
+    populateSelect(UI.byId("attendanceMonth"), ctx.months);
+    populateSelect(UI.byId("attendanceSession"), ctx.sessions);
+    setToday();
+    renderAttendanceRows();
+    ["attendanceMonth", "attendanceSession"].forEach((id) => UI.byId(id)?.addEventListener("change", renderAttendanceRows));
+    UI.byId("attendanceForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const rows = [...document.querySelectorAll("[data-attendance-kid]")];
+      const entries = rows.map((row) => ({
+        kid: row.dataset.attendanceKid,
+        status: row.querySelector("[data-attendance-status]").value,
+        note: row.querySelector("[data-attendance-note]").value
+      }));
+      status.textContent = "Saving attendance...";
+      try {
+        const result = await Api.post("mark_attendance", {
+          date: UI.byId("attendanceDate").value,
+          session: UI.byId("attendanceSession").value,
+          entries
+        });
+        status.textContent = `Saved ${result.count} attendance row${result.count === 1 ? "" : "s"}.`;
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+  }
+
   async function load() {
     const target = path.includes("dues") ? "duesRows"
       : path.includes("sessions") ? "adminSessions"
       : path.includes("coaches") ? "coachPayoutRows"
+      : path.includes("payments") ? "paymentStatus"
+      : path.includes("attendance") ? "attendanceStatus"
       : "adminStats";
     if (UI.renderSetup(target)) return;
     try {
@@ -133,6 +268,10 @@
         renderSessions(await Api.get("admin_sessions", { month: defaultMonth("sessionsMonth") }));
       } else if (path.includes("coaches")) {
         renderCoaches(await Api.get("admin_coaches", { month: defaultMonth("coachesMonth") }));
+      } else if (path.includes("payments")) {
+        await initPayments();
+      } else if (path.includes("attendance")) {
+        await initAttendance();
       } else {
         renderDashboard(await Api.get("admin_dashboard", { month: defaultMonth("adminMonth") }));
       }
