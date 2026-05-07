@@ -492,6 +492,29 @@ button {
   margin: 16px 0;
 }
 
+.attendance-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(96px, 1fr));
+  gap: 6px;
+}
+
+.attendance-toggle button {
+  padding: 9px 12px;
+  border-radius: 7px;
+  background: #e8eef4;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.attendance-toggle button.active {
+  background: var(--success);
+  color: #fff;
+}
+
+.attendance-toggle button[data-attendance-set="Absent"].active {
+  background: var(--danger);
+}
+
 .table-wrap {
   width: 100%;
   overflow-x: auto;

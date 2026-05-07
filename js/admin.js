@@ -7,6 +7,12 @@
     return (el && el.value) || window.BLNO_CONFIG.DEFAULT_MONTH;
   }
 
+  function defaultMonthFromInput(id) {
+    const el = UI.byId(id);
+    if (el && !el.value) el.value = window.BLNO_CONFIG.DEFAULT_MONTH;
+    return defaultMonth(id);
+  }
+
   function renderDashboard(data) {
     const stats = [
       ["Enrolled kids", data.kids],
@@ -149,6 +155,18 @@
     }).join("");
   }
 
+  function setSelectValue(select, preferred) {
+    if (!select || !preferred) return;
+    const found = [...select.options].find((option) => option.value === preferred);
+    if (found) select.value = preferred;
+  }
+
+  function currentMonthFromContext(ctx) {
+    const configured = window.BLNO_CONFIG.DEFAULT_MONTH;
+    if ((ctx.months || []).includes(configured)) return configured;
+    return (ctx.months || [configured])[ctx.months.length - 1] || configured;
+  }
+
   function currentKidMonth(kidName, month) {
     const kid = (adminContext?.kids || []).find((row) => row.name === kidName);
     if (!kid) return null;
@@ -170,10 +188,23 @@
   async function initPayments() {
     const status = UI.byId("paymentStatus");
     const ctx = await loadAdminContext();
-    populateSelect(UI.byId("paymentKid"), ctx.kids, (kid) => `${kid.name} · ${kid.parent || ""}`, (kid) => kid.name);
+    let visibleKids = ctx.kids || [];
+    function refreshKidOptions() {
+      populateSelect(UI.byId("paymentKid"), visibleKids, (kid) => `${kid.name} · ${kid.parent || ""}`, (kid) => kid.name);
+      updatePaymentCurrent();
+    }
+    refreshKidOptions();
     populateSelect(UI.byId("paymentMonth"), ctx.months);
+    setSelectValue(UI.byId("paymentMonth"), currentMonthFromContext(ctx));
     updatePaymentCurrent();
     ["paymentKid", "paymentMonth"].forEach((id) => UI.byId(id)?.addEventListener("change", updatePaymentCurrent));
+    UI.byId("paymentSearch")?.addEventListener("input", (event) => {
+      const q = event.target.value.trim().toLowerCase();
+      visibleKids = q
+        ? ctx.kids.filter((kid) => `${kid.name} ${kid.parent || ""} ${kid.phone || ""}`.toLowerCase().includes(q))
+        : ctx.kids;
+      refreshKidOptions();
+    });
     UI.byId("paymentForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
       status.textContent = "Saving payment...";
@@ -208,18 +239,23 @@
       return kid.session === session && monthly && monthly.enrolled && String(kid.status || "").toLowerCase() !== "dropped";
     });
     target.innerHTML = kids.length ? kids.map((kid) => `
-      <tr data-attendance-kid="${UI.escapeHtml(kid.name)}">
+      <tr data-attendance-kid="${UI.escapeHtml(kid.name)}" data-attendance-value="Present">
         <td>${UI.escapeHtml(kid.name)}</td>
         <td>
-          <select data-attendance-status>
-            <option>Present</option>
-            <option>Absent</option>
-            <option>Late</option>
-            <option>Make-up</option>
-          </select>
+          <div class="attendance-toggle" role="group" aria-label="Attendance for ${UI.escapeHtml(kid.name)}">
+            <button type="button" class="active" data-attendance-set="Present">Present</button>
+            <button type="button" data-attendance-set="Absent">Absent</button>
+          </div>
         </td>
         <td><input data-attendance-note type="text" placeholder="Optional"></td>
       </tr>`).join("") : `<tr><td colspan="3">${UI.emptyState("No enrolled kids found for this session/month.")}</td></tr>`;
+    target.querySelectorAll("[data-attendance-set]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const row = button.closest("[data-attendance-kid]");
+        row.dataset.attendanceValue = button.dataset.attendanceSet;
+        row.querySelectorAll("[data-attendance-set]").forEach((btn) => btn.classList.toggle("active", btn === button));
+      });
+    });
   }
 
   async function initAttendance() {
@@ -227,6 +263,7 @@
     const ctx = await loadAdminContext();
     populateSelect(UI.byId("attendanceMonth"), ctx.months);
     populateSelect(UI.byId("attendanceSession"), ctx.sessions);
+    setSelectValue(UI.byId("attendanceMonth"), currentMonthFromContext(ctx));
     setToday();
     renderAttendanceRows();
     ["attendanceMonth", "attendanceSession"].forEach((id) => UI.byId(id)?.addEventListener("change", renderAttendanceRows));
@@ -235,7 +272,7 @@
       const rows = [...document.querySelectorAll("[data-attendance-kid]")];
       const entries = rows.map((row) => ({
         kid: row.dataset.attendanceKid,
-        status: row.querySelector("[data-attendance-status]").value,
+        status: row.dataset.attendanceValue || "Present",
         note: row.querySelector("[data-attendance-note]").value
       }));
       status.textContent = "Saving attendance...";
@@ -265,15 +302,15 @@
       if (path.includes("dues")) {
         renderDues(await Api.get("admin_dues", { filter: UI.byId("duesFilter")?.value || "all" }));
       } else if (path.includes("sessions")) {
-        renderSessions(await Api.get("admin_sessions", { month: defaultMonth("sessionsMonth") }));
+        renderSessions(await Api.get("admin_sessions", { month: defaultMonthFromInput("sessionsMonth") }));
       } else if (path.includes("coaches")) {
-        renderCoaches(await Api.get("admin_coaches", { month: defaultMonth("coachesMonth") }));
+        renderCoaches(await Api.get("admin_coaches", { month: defaultMonthFromInput("coachesMonth") }));
       } else if (path.includes("payments")) {
         await initPayments();
       } else if (path.includes("attendance")) {
         await initAttendance();
       } else {
-        renderDashboard(await Api.get("admin_dashboard", { month: defaultMonth("adminMonth") }));
+        renderDashboard(await Api.get("admin_dashboard", { month: defaultMonthFromInput("adminMonth") }));
       }
     } catch (err) {
       UI.renderError(target, err);
