@@ -24,7 +24,9 @@
     UI.byId("adminStats").innerHTML = stats.map(([label, value]) => `
       <article class="stat-card"><span>${label}</span><strong>${value}</strong></article>`).join("");
 
-    const trend = data.trend || [];
+    const trend = (data.trend && data.trend.length)
+      ? data.trend
+      : [{ month: defaultMonth("adminMonth"), kids: data.kids, collected: data.collected }];
     const canvas = UI.byId("trendChart");
     if (!canvas || !window.Chart) return;
     if (window.blnoTrendChart) window.blnoTrendChart.destroy();
@@ -179,10 +181,29 @@
     const month = UI.byId("paymentMonth")?.value;
     const current = currentKidMonth(kidName, month);
     const target = UI.byId("paymentCurrent");
-    if (!target || !current) return;
-    target.textContent = `${current.kid.parent || ""} · Paid ${UI.money(current.monthly?.paid || 0)} · Due ${UI.money(current.monthly?.due || 0)}`;
+    const selected = UI.byId("paymentSelected");
+    if (!current) {
+      if (target) target.innerHTML = "<span>Select a kid and month.</span><strong>$0</strong>";
+      if (selected) selected.innerHTML = "<span>No student selected.</span>";
+      return;
+    }
+    if (selected) {
+      selected.innerHTML = `
+        <span class="avatar">${UI.escapeHtml(UI.initials(current.kid.name))}</span>
+        <div>
+          <strong>${UI.escapeHtml(current.kid.name)}</strong>
+          <span>Parent: ${UI.escapeHtml(current.kid.parent || "Not listed")}</span>
+        </div>
+        <span class="${Number(current.monthly?.due || 0) > 0 ? "tag tag-red" : "tag tag-green"}">${Number(current.monthly?.due || 0) > 0 ? "Due" : "Clear"}</span>`;
+    }
+    if (target) {
+      const due = Number(current.monthly?.due || 0);
+      target.innerHTML = `
+        <span>Confirming payment for ${UI.escapeHtml(current.kid.name)}<br><small>Paid ${UI.money(current.monthly?.paid || 0)} · Due ${UI.money(due)}</small></span>
+        <strong>${UI.money(Number(UI.byId("paymentAmount")?.value || due || current.monthly?.paid || 0))}</strong>`;
+    }
     const amount = UI.byId("paymentAmount");
-    if (amount && !amount.value) amount.value = Number(current.monthly?.paid || 0);
+    if (amount && !amount.value) amount.value = Number(current.monthly?.due || current.monthly?.paid || 0);
   }
 
   async function initPayments() {
@@ -204,6 +225,15 @@
         ? ctx.kids.filter((kid) => `${kid.name} ${kid.parent || ""} ${kid.phone || ""}`.toLowerCase().includes(q))
         : ctx.kids;
       refreshKidOptions();
+    });
+    UI.byId("paymentAmount")?.addEventListener("input", updatePaymentCurrent);
+    document.querySelectorAll("[data-payment-method]").forEach((button) => {
+      button.addEventListener("click", () => {
+        UI.byId("paymentMethod").value = button.dataset.paymentMethod;
+        document.querySelectorAll("[data-payment-method]").forEach((btn) => {
+          btn.classList.toggle("active", btn === button);
+        });
+      });
     });
     UI.byId("paymentForm")?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -238,17 +268,25 @@
       const monthly = (kid.monthly || []).find((row) => row.month === month);
       return kid.session === session && monthly && monthly.enrolled && String(kid.status || "").toLowerCase() !== "dropped";
     });
+    const progress = UI.byId("attendanceProgress");
+    if (progress) progress.textContent = kids.length ? `${kids.length}/${kids.length} marked` : "0 marked";
     target.innerHTML = kids.length ? kids.map((kid) => `
-      <tr data-attendance-kid="${UI.escapeHtml(kid.name)}" data-attendance-value="Present">
-        <td>${UI.escapeHtml(kid.name)}</td>
-        <td>
+      <article class="attendance-row" data-attendance-kid="${UI.escapeHtml(kid.name)}" data-attendance-value="Present">
+        <div class="attendance-kid">
+          <span class="avatar">${UI.escapeHtml(UI.initials(kid.name))}</span>
+          <div>
+            <strong>${UI.escapeHtml(kid.name)}</strong>
+            <span>${UI.escapeHtml(kid.skill || kid.status || "Enrolled")}</span>
+          </div>
+        </div>
+        <div class="attendance-actions">
           <div class="attendance-toggle" role="group" aria-label="Attendance for ${UI.escapeHtml(kid.name)}">
             <button type="button" class="active" data-attendance-set="Present">Present</button>
             <button type="button" data-attendance-set="Absent">Absent</button>
           </div>
-        </td>
-        <td><input data-attendance-note type="text" placeholder="Optional"></td>
-      </tr>`).join("") : `<tr><td colspan="3">${UI.emptyState("No enrolled kids found for this session/month.")}</td></tr>`;
+        </div>
+        <input data-attendance-note type="text" placeholder="Optional note">
+      </article>`).join("") : UI.emptyState("No enrolled kids found for this session/month.");
     target.querySelectorAll("[data-attendance-set]").forEach((button) => {
       button.addEventListener("click", () => {
         const row = button.closest("[data-attendance-kid]");

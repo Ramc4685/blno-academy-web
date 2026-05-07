@@ -1,4 +1,4 @@
-const CACHE_NAME = "blno-academy-v1";
+const CACHE_NAME = "blno-academy-v2";
 const ASSETS = [
   "./",
   "./index.html",

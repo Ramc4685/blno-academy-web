@@ -29,20 +29,23 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel workflow-panel">
         <form id="attendanceForm">
-          <div class="form-grid">
-            <label>Date<input id="attendanceDate" type="date" required></label>
-            <label>Month<select id="attendanceMonth" required></select></label>
-            <label class="span-2">Session<select id="attendanceSession" required></select></label>
+          <div class="form-card">
+            <div class="form-grid">
+              <label>Date<input id="attendanceDate" type="date" required></label>
+              <label>Month<select id="attendanceMonth" required></select></label>
+              <label class="span-2">Session<select id="attendanceSession" required></select></label>
+            </div>
           </div>
-          <div class="table-wrap attendance-table">
-            <table>
-              <thead><tr><th>Kid</th><th>Status</th><th>Note</th></tr></thead>
-              <tbody id="attendanceRows"></tbody>
-            </table>
+          <div class="form-card">
+            <div class="panel-header">
+              <h2>Attendance Roster</h2>
+              <span id="attendanceProgress" class="tag">0 marked</span>
+            </div>
+            <div id="attendanceRows" class="attendance-roster"></div>
+            <button class="primary-action" type="submit">Save Attendance</button>
           </div>
-          <button class="primary-action" type="submit">Save attendance</button>
         </form>
         <div id="attendanceStatus" class="status-line"></div>
       </section>

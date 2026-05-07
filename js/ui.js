@@ -42,6 +42,15 @@
       .replace(/'/g, "&#039;");
   }
 
+  function initials(value) {
+    return String(value || "B")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "B";
+  }
+
   function renderError(targetId, error) {
     const target = byId(targetId);
     if (!target) return;
@@ -59,5 +68,5 @@
     return false;
   }
 
-  window.UI = { byId, emptyState, escapeHtml, money, pct, renderError, renderSetup, setText, statusClass };
+  window.UI = { byId, emptyState, escapeHtml, initials, money, pct, renderError, renderSetup, setText, statusClass };
 })();
