@@ -214,7 +214,9 @@ function blnoAdminSessions_(auth, month) {
 
 function blnoAdminCoaches_(auth, month) {
   blnoRequireAdmin_(auth);
-  return blnoCoachPayRows_(month, "");
+  var sheetRows = blnoCoachPayRows_(month, "");
+  if (sheetRows.length) return sheetRows;
+  return blnoCoachRowsFromRoster_(month, "");
 }
 
 function blnoRoster_() {
@@ -300,9 +302,10 @@ function blnoCoachPayRows_(month, coachFilter) {
   if (!sheet) return [];
   var table = blnoTable_(sheet);
   return table.rows.map(function (row) {
+    var rowMonth = blnoNormalizeMonth_(blnoPick_(row, ["Month"])) || month;
     return {
       coach: blnoPick_(row, ["Coach"]),
-      month: blnoPick_(row, ["Month"]) || month,
+      month: rowMonth,
       kids: blnoNumber_(blnoPick_(row, ["Kids", "Kids Count", "Enrolled"])),
       revenue: blnoNumber_(blnoPick_(row, ["Expected Revenue", "Revenue"])),
       pct: blnoPct_(blnoPick_(row, ["Payout %", "Pct", "Payout Percent"])),
@@ -311,8 +314,49 @@ function blnoCoachPayRows_(month, coachFilter) {
   }).filter(function (row) {
     var monthMatches = !month || month === "all" || row.month === month;
     var coachMatches = !coachFilter || row.coach === coachFilter;
-    return monthMatches && coachMatches;
+    return row.coach && monthMatches && coachMatches;
   });
+}
+
+function blnoCoachRowsFromRoster_(month, coachFilter) {
+  var roster = blnoRoster_();
+  var payoutPctByCoach = blnoPayoutPctByCoach_();
+  var groups = {};
+
+  Object.keys(BLNO_API.coachEmails).forEach(function (email) {
+    var coach = BLNO_API.coachEmails[email];
+    if (!coachFilter || coach === coachFilter) {
+      groups[coach] = { coach: coach, month: month, kids: 0, revenue: 0, pct: payoutPctByCoach[coach] || 0, payout: 0 };
+    }
+  });
+
+  roster.rows.forEach(function (row) {
+    var m = row.monthly[month] || {};
+    if (!m.enrolled || String(row.status).toLowerCase() === "dropped") return;
+    var session = m.override || row.session;
+    var coach = blnoCoachFromSession_(session) || row.coach;
+    if (!coach || (coachFilter && coach !== coachFilter)) return;
+    if (!groups[coach]) {
+      groups[coach] = { coach: coach, month: month, kids: 0, revenue: 0, pct: payoutPctByCoach[coach] || 0, payout: 0 };
+    }
+    groups[coach].kids++;
+    groups[coach].revenue += blnoNumber_(m.pay) + blnoNumber_(m.due);
+  });
+
+  return Object.keys(groups).sort().map(function (coach) {
+    var row = groups[coach];
+    row.payout = Math.round(row.revenue * row.pct);
+    return row;
+  });
+}
+
+function blnoPayoutPctByCoach_() {
+  var pctByCoach = {};
+  var rows = blnoCoachPayRows_("all", "");
+  rows.forEach(function (row) {
+    if (row.coach && row.pct !== null && row.pct !== undefined) pctByCoach[row.coach] = row.pct;
+  });
+  return pctByCoach;
 }
 
 function blnoCoachPayslipHistory_(auth) {
@@ -482,6 +526,15 @@ function blnoPct_(value) {
   var n = Number(s);
   if (isNaN(n)) return null;
   return n > 1 ? n / 100 : n;
+}
+
+function blnoNormalizeMonth_(value) {
+  if (!value) return "";
+  if (value instanceof Date && !isNaN(value)) {
+    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return months[value.getMonth()] + "-" + value.getFullYear();
+  }
+  return String(value);
 }
 
 function blnoLower_(value) {

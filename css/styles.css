@@ -293,7 +293,7 @@ button {
   border: 1px solid #e1c973;
   border-radius: 7px;
   background: var(--input);
-  color: var(--ink);
+  color: #14212d;
   padding: 10px 12px;
   font-weight: 800;
 }
@@ -631,12 +631,14 @@ code {
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
+    --primary: #8cc8ff;
+    --primary-strong: #d8ecff;
     --ink: #ecf3f9;
     --muted: #a8b8c6;
     --line: #284459;
     --surface: #102536;
     --page: #091a28;
-    --primary-soft: #173d5e;
+    --primary-soft: #174466;
     --shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
   }
 
