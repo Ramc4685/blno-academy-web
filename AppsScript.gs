@@ -20,8 +20,8 @@ var BLNO_API = {
   expectedClientId: "776947524108-mb972fjd6gs9b813rt0tl80lhk8qej3l.apps.googleusercontent.com",
   adminEmails: ["ramchand4685@gmail.com"],
   coachEmails: {
-    "gowtham@example.com": "Gowtham",
-    "kishore@example.com": "Kishore"
+    "gowthamptr@gmail.com": "Gowtham",
+    "kishoreraosubbarao@gmail.com": "Kishore"
   },
   capacity: 15,
   currentMonth: "May-2026",

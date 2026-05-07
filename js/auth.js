@@ -1,6 +1,7 @@
 (function () {
   const TOKEN_KEY = "blno.idToken";
   const PROFILE_KEY = "blno.profile";
+  const storage = window.localStorage || window.sessionStorage;
 
   function getConfig() {
     return window.BLNO_CONFIG || {};
@@ -29,17 +30,24 @@
 
   function saveToken(token) {
     const profile = decodeJwt(token);
-    sessionStorage.setItem(TOKEN_KEY, token);
-    if (profile) sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+    storage.setItem(TOKEN_KEY, token);
+    if (profile) storage.setItem(PROFILE_KEY, JSON.stringify(profile));
     return profile;
   }
 
   function getToken() {
-    return sessionStorage.getItem(TOKEN_KEY);
+    const token = storage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    const profile = token ? decodeJwt(token) : null;
+    const now = Math.floor(Date.now() / 1000);
+    if (!token || !profile || !profile.exp || profile.exp <= now + 60) {
+      clearSession();
+      return null;
+    }
+    return token;
   }
 
   function getProfile() {
-    const raw = sessionStorage.getItem(PROFILE_KEY);
+    const raw = storage.getItem(PROFILE_KEY) || sessionStorage.getItem(PROFILE_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw);
@@ -49,6 +57,8 @@
   }
 
   function clearSession() {
+    storage.removeItem(TOKEN_KEY);
+    storage.removeItem(PROFILE_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(PROFILE_KEY);
   }
@@ -68,6 +78,8 @@
       if (!window.google || !google.accounts || !google.accounts.id) return;
       google.accounts.id.initialize({
         client_id: getConfig().GOOGLE_CLIENT_ID,
+        auto_select: true,
+        cancel_on_tap_outside: false,
         callback: (response) => {
           saveToken(response.credential);
           document.dispatchEvent(new CustomEvent("blno:signed-in"));
@@ -81,6 +93,7 @@
         text: "signin_with",
         width: Math.min(320, target.clientWidth || 320)
       });
+      google.accounts.id.prompt();
       if (onReady) onReady(true);
     }
 

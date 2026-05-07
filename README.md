@@ -98,3 +98,25 @@ Each request includes `id_token=<google_id_token>`. Apps Script verifies the tok
 - Coach results are filtered server-side by allowlisted coach email.
 - Admin-only endpoints require `BLNO_API.adminEmails`.
 - Apps Script logs every call with timestamp, verified email, and action via `console.log`.
+- The site is installable as a PWA on mobile. On iPhone, use Safari `Share -> Add to Home Screen`. On Android Chrome, use the browser install prompt or menu.
+- Google ID tokens expire. The frontend stores a valid token locally and uses Google One Tap/auto-select to make returning sign-in easier, but a permanent login requires a server-issued session, which is intentionally not part of this read-only static v1.
+
+## Current Role Allowlist
+
+Configured in `AppsScript.gs`:
+
+- Admin: `ramchand4685@gmail.com`
+- Coach Gowtham: `gowthamptr@gmail.com`
+- Coach Kishore: `Kishoreraosubbarao@gmail.com`
+
+## Push Notifications
+
+True push notifications require write support: the browser must save each user's push subscription somewhere, and a backend must send notifications through Web Push. The current v1 API is read-only, so push notifications should be a v2 feature.
+
+Practical v2 path:
+
+1. Add a `Push_Subscriptions` tab to the Sheet.
+2. Add authenticated write endpoints for `subscribe_push` and `unsubscribe_push`.
+3. Add Web Push VAPID keys.
+4. Add a time trigger in Apps Script to detect dues/schedule changes and send push messages.
+5. Keep notifications role-scoped: parents only receive their own kid's schedule/dues, coaches only their sessions, admin academy alerts.
