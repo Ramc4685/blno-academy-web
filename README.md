@@ -44,6 +44,7 @@ The OAuth Client ID is public. Do not put a client secret in this site.
 8. Update:
    - `BLNO_API.expectedClientId`
    - `BLNO_API.coachEmails`
+   - `BLNO_API.coachPayoutPct` with each coach's payout percentage, unless every payout percentage is maintained in `Coach_Payslip`
    - `BLNO_API.adminEmails` if needed
 9. Save the project.
 10. Select `blnoAuthorizeWebApiServices` from the function dropdown and click `Run` once. Approve permissions.
@@ -102,8 +103,11 @@ Write actions append to `Audit_Log`. Payment writes also append to `Payment_Log`
 ## Notes
 
 - The frontend does not recompute tuition, proration, or dues. It displays values returned by Apps Script from the Sheet.
-- Admin payment writes update the selected Roster month `Pay` cell; Sheet formulas remain responsible for `Due`.
+- Admin payment writes add the entered amount to the selected Roster month `Pay` cell; Sheet formulas remain responsible for `Due`.
 - Admin attendance writes upsert rows in `Attendance_Log` by date + session + kid.
+- Coach payout is calculated as `expected revenue x payout %`. Expected revenue is each enrolled, non-dropped kid's selected month `Pay + Due`, grouped by the coach named in the session or roster row.
+- `Coach_Payslip` rows are authoritative when present. If a coach/month row is missing, Apps Script falls back to calculating the row from `Roster` and uses `BLNO_API.coachPayoutPct` or a prior `Coach_Payslip` payout percentage for that coach.
+- If no payout percentage is configured for a coach, the API returns a missing payout instead of treating the payout as `$0`.
 - Parent results are filtered server-side by verified email.
 - Coach results are filtered server-side by allowlisted coach email.
 - Admin-only endpoints require `BLNO_API.adminEmails`.

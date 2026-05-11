@@ -23,6 +23,10 @@ var BLNO_API = {
     "gowthamptr@gmail.com": "Gowtham",
     "kishoreraosubbarao@gmail.com": "Kishore"
   },
+  coachPayoutPct: {
+    Gowtham: "",
+    Kishore: ""
+  },
   capacity: 15,
   currentMonth: "May-2026",
   tabs: {
@@ -48,15 +52,21 @@ function doGet(e) {
     var data;
     if (action === "me") data = blnoMe_(auth);
     else if (action === "parent_kids") data = blnoParentKids_(auth);
-    else if (action === "coach_roster") data = blnoCoachRoster_(auth, params.month || BLNO_API.currentMonth);
-    else if (action === "admin_dashboard") data = blnoAdminDashboard_(auth, params.month || BLNO_API.currentMonth);
+    else if (action === "parent_child_detail") data = blnoParentChildDetail_(auth, params.kid || "");
+    else if (action === "parent_schedule") data = blnoParentSchedule_(auth, params.month || blnoDefaultMonth_());
+    else if (action === "coach_roster") data = blnoCoachRoster_(auth, params.month || blnoDefaultMonth_());
+    else if (action === "coach_today") data = blnoCoachToday_(auth, params.date || "", params.month || blnoDefaultMonth_());
+    else if (action === "coach_session_detail") data = blnoCoachSessionDetail_(auth, params.session || "", params.month || blnoDefaultMonth_());
+    else if (action === "admin_dashboard") data = blnoAdminDashboard_(auth, params.month || blnoDefaultMonth_());
     else if (action === "admin_dues") data = blnoAdminDues_(auth, params.filter || "all");
-    else if (action === "admin_sessions") data = blnoAdminSessions_(auth, params.month || BLNO_API.currentMonth);
-    else if (action === "admin_coaches") data = blnoAdminCoaches_(auth, params.month || BLNO_API.currentMonth);
+    else if (action === "admin_sessions") data = blnoAdminSessions_(auth, params.month || blnoDefaultMonth_());
+    else if (action === "admin_coaches") data = blnoAdminCoaches_(auth, params.month || blnoDefaultMonth_());
     else if (action === "admin_kids") data = blnoAdminKids_(auth);
+    else if (action === "admin_settings") data = blnoAdminSettings_(auth);
     else if (action === "mark_payment") data = blnoMarkPayment_(auth, params);
     else if (action === "mark_attendance") data = blnoMarkAttendance_(auth, params);
     else if (action === "send_due_reminder") data = blnoLogDueReminder_(auth, params);
+    else if (action === "save_admin_settings") data = blnoSaveAdminSettings_(auth, params);
     else throw new Error("Unknown action: " + action);
 
     return blnoJson_({ ok: true, data: data }, params.callback);
@@ -76,6 +86,7 @@ function doPost(e) {
     if (action === "mark_payment") data = blnoMarkPayment_(auth, payload);
     else if (action === "mark_attendance") data = blnoMarkAttendance_(auth, payload);
     else if (action === "send_due_reminder") data = blnoLogDueReminder_(auth, payload);
+    else if (action === "save_admin_settings") data = blnoSaveAdminSettings_(auth, payload);
     else throw new Error("Unknown write action: " + action);
 
     return blnoJson_({ ok: true, data: data });
@@ -180,9 +191,51 @@ function blnoParentKids_(auth) {
       monthly: monthly,
       attendancePct: blnoAttendanceFor_(attendance, name, current.month),
       totalDue: totalDue,
-      moves: moves[name] || []
+      moves: moves[name] || [],
+      parent: row.parentName,
+      phone: row.phone,
+      email: row.email
     };
   });
+}
+
+function blnoParentChildDetail_(auth, kidName) {
+  if (auth.role !== "parent" && auth.role !== "admin") throw new Error("Parent access required.");
+  kidName = String(kidName || "").trim();
+  var kids = blnoParentKids_(auth);
+  var kid = kids.filter(function (row) { return row.name === kidName; })[0] || kids[0];
+  if (!kid) throw new Error("Kid not found.");
+  return kid;
+}
+
+function blnoParentSchedule_(auth, month) {
+  if (auth.role !== "parent" && auth.role !== "admin") throw new Error("Parent access required.");
+  var kids = blnoParentKids_(auth);
+  month = month || blnoDefaultMonth_();
+  return {
+    month: month,
+    months: blnoRoster_().months,
+    kids: kids.map(function (kid) {
+      var current = null;
+      (kid.monthly || []).forEach(function (m) {
+        if (m.month === month) current = m;
+      });
+      return {
+        name: kid.name,
+        parent: kid.parent || "",
+        phone: kid.phone || "",
+        email: kid.email || "",
+        session: kid.session,
+        coach: kid.coach,
+        skill: kid.skill,
+        status: kid.status,
+        enrolled: current ? !!current.enrolled : false,
+        paid: current ? current.paid : 0,
+        due: current ? current.due : 0,
+        attendancePct: current ? current.attendancePct : kid.attendancePct
+      };
+    })
+  };
 }
 
 function blnoCoachRoster_(auth, month) {
@@ -190,9 +243,38 @@ function blnoCoachRoster_(auth, month) {
   if (month === "all") return { payslip: blnoCoachPayslipHistory_(auth) };
   var coach = auth.role === "coach" ? auth.coach : "";
   var sessions = blnoSessionRows_(month, coach);
-  var payoutRows = blnoCoachPayRows_(month, coach);
-  var payout = payoutRows.reduce(function (sum, row) { return sum + blnoNumber_(row.payout); }, 0);
+  var payoutRows = blnoCoachPayoutRows_(month, coach);
+  var payout = payoutRows.some(function (row) { return row.pct === null; })
+    ? null
+    : payoutRows.reduce(function (sum, row) { return sum + blnoNumber_(row.payout); }, 0);
   return { sessions: sessions, payout: payout };
+}
+
+function blnoCoachToday_(auth, dateValue, month) {
+  if (auth.role !== "coach" && auth.role !== "admin") throw new Error("Coach access required.");
+  var dateObj = dateValue ? new Date(dateValue + "T00:00:00") : new Date();
+  var day = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][dateObj.getDay()];
+  var data = blnoCoachRoster_(auth, month || blnoDefaultMonth_());
+  var todaySessions = (data.sessions || []).filter(function (session) {
+    return String(session.name || "").indexOf(day) >= 0;
+  });
+  return {
+    date: blnoDateKey_(dateObj),
+    day: day,
+    month: month || blnoDefaultMonth_(),
+    sessions: data.sessions || [],
+    todaySessions: todaySessions,
+    payout: data.payout
+  };
+}
+
+function blnoCoachSessionDetail_(auth, sessionName, month) {
+  if (auth.role !== "coach" && auth.role !== "admin") throw new Error("Coach access required.");
+  sessionName = String(sessionName || "").trim();
+  var data = blnoCoachRoster_(auth, month || blnoDefaultMonth_());
+  var session = (data.sessions || []).filter(function (row) { return row.name === sessionName; })[0] || (data.sessions || [])[0];
+  if (!session) throw new Error("Session not found.");
+  return { month: month || blnoDefaultMonth_(), session: session, payout: data.payout };
 }
 
 function blnoAdminDashboard_(auth, month) {
@@ -240,9 +322,7 @@ function blnoAdminSessions_(auth, month) {
 
 function blnoAdminCoaches_(auth, month) {
   blnoRequireAdmin_(auth);
-  var sheetRows = blnoCoachPayRows_(month, "");
-  if (sheetRows.length) return sheetRows;
-  return blnoCoachRowsFromRoster_(month, "");
+  return blnoCoachPayoutRows_(month, "");
 }
 
 function blnoAdminKids_(auth) {
@@ -269,6 +349,36 @@ function blnoAdminKids_(auth) {
   };
 }
 
+function blnoAdminSettings_(auth) {
+  blnoRequireAdmin_(auth);
+  var settings = blnoSettingsMap_();
+  var roster = blnoRoster_();
+  return {
+    academyName: settings.academyName || "BlNo Badminton Academy",
+    defaultMonth: settings.defaultMonth || BLNO_API.currentMonth,
+    zellePhone: settings.zellePhone || "2488859243",
+    months: roster.months,
+    installInstructions: [
+      "Open the portal in Chrome or Safari.",
+      "Use the browser share/menu button.",
+      "Choose Add to Home Screen or Install app."
+    ]
+  };
+}
+
+function blnoSaveAdminSettings_(auth, payload) {
+  blnoRequireAdmin_(auth);
+  var defaultMonth = String(payload.defaultMonth || "").trim();
+  var zellePhone = String(payload.zellePhone || "").trim();
+  if (!defaultMonth) throw new Error("Default month is required.");
+  var sheet = blnoEnsureSheet_("Settings", ["Key", "Value"], 1);
+  blnoUpsertSetting_(sheet, "academyName", "BlNo Badminton Academy");
+  blnoUpsertSetting_(sheet, "defaultMonth", defaultMonth);
+  blnoUpsertSetting_(sheet, "zellePhone", zellePhone || "2488859243");
+  blnoAppendAudit_(auth.email, "save_admin_settings", "Settings", "", "", defaultMonth, { zellePhone: zellePhone });
+  return blnoAdminSettings_(auth);
+}
+
 function blnoMarkPayment_(auth, payload) {
   blnoRequireAdmin_(auth);
   var kid = String(payload.kid || "").trim();
@@ -290,17 +400,18 @@ function blnoMarkPayment_(auth, payload) {
 
   var cell = roster.getRange(rowNumber, payCol);
   var previous = blnoNumber_(cell.getValue());
-  cell.setValue(amount).setNumberFormat('"$"#,##0;("$"#,##0);"-"');
+  var next = previous + amount;
+  cell.setValue(next).setNumberFormat('"$"#,##0;("$"#,##0);"-"');
 
-  blnoAppendPaymentLog_(auth.email, kid, month, amount, method, note, previous, amount);
-  blnoAppendAudit_(auth.email, "mark_payment", kid, month, previous, amount, { method: method, note: note });
-  return { kid: kid, month: month, previous: previous, paid: amount };
+  blnoAppendPaymentLog_(auth.email, kid, month, amount, method, note, previous, next);
+  blnoAppendAudit_(auth.email, "mark_payment", kid, month, previous, next, { method: method, note: note });
+  return { kid: kid, month: month, previous: previous, amount: amount, paid: next };
 }
 
 function blnoMarkAttendance_(auth, payload) {
-  blnoRequireAdmin_(auth);
   var dateValue = String(payload.date || "").trim();
   var session = String(payload.session || "").trim();
+  blnoRequireAttendanceActor_(auth, session);
   var entries = blnoParseEntries_(payload.entries);
   if (!dateValue) throw new Error("Date is required.");
   if (!session) throw new Error("Session is required.");
@@ -434,19 +545,40 @@ function blnoCoachPayRows_(month, coachFilter) {
   var table = blnoTable_(sheet);
   return table.rows.map(function (row) {
     var rowMonth = blnoNormalizeMonth_(blnoPick_(row, ["Month"])) || month;
+    var revenue = blnoNumber_(blnoPick_(row, ["Expected Revenue", "Revenue"]));
+    var pct = blnoPct_(blnoPick_(row, ["Payout %", "Pct", "Payout Percent"]));
+    var rawPayout = blnoPick_(row, ["Payout", "Payout $", "Payout Amount"]);
     return {
       coach: blnoPick_(row, ["Coach"]),
       month: rowMonth,
       kids: blnoNumber_(blnoPick_(row, ["Kids", "Kids Count", "Enrolled"])),
-      revenue: blnoNumber_(blnoPick_(row, ["Expected Revenue", "Revenue"])),
-      pct: blnoPct_(blnoPick_(row, ["Payout %", "Pct", "Payout Percent"])),
-      payout: blnoNumber_(blnoPick_(row, ["Payout", "Payout $", "Payout Amount"]))
+      revenue: revenue,
+      pct: pct,
+      payout: rawPayout !== "" ? blnoNumber_(rawPayout) : (pct === null ? null : Math.round(revenue * pct))
     };
   }).filter(function (row) {
     var monthMatches = !month || month === "all" || row.month === month;
     var coachMatches = !coachFilter || row.coach === coachFilter;
     return row.coach && monthMatches && coachMatches;
   });
+}
+
+function blnoCoachPayoutRows_(month, coachFilter) {
+  var sheetRows = blnoCoachPayRows_(month, coachFilter);
+  if (month === "all") return sheetRows;
+
+  var rosterRows = blnoCoachRowsFromRoster_(month, coachFilter);
+  if (!sheetRows.length) return rosterRows;
+
+  var seen = {};
+  var merged = sheetRows.map(function (row) {
+    seen[row.coach] = true;
+    return row;
+  });
+  rosterRows.forEach(function (row) {
+    if (!seen[row.coach]) merged.push(row);
+  });
+  return merged.sort(function (a, b) { return String(a.coach).localeCompare(String(b.coach)); });
 }
 
 function blnoCoachRowsFromRoster_(month, coachFilter) {
@@ -457,7 +589,7 @@ function blnoCoachRowsFromRoster_(month, coachFilter) {
   Object.keys(BLNO_API.coachEmails).forEach(function (email) {
     var coach = BLNO_API.coachEmails[email];
     if (!coachFilter || coach === coachFilter) {
-      groups[coach] = { coach: coach, month: month, kids: 0, revenue: 0, pct: payoutPctByCoach[coach] || 0, payout: 0 };
+      groups[coach] = { coach: coach, month: month, kids: 0, revenue: 0, pct: blnoPayoutPctForCoach_(payoutPctByCoach, coach), payout: null };
     }
   });
 
@@ -468,7 +600,7 @@ function blnoCoachRowsFromRoster_(month, coachFilter) {
     var coach = blnoCoachFromSession_(session) || row.coach;
     if (!coach || (coachFilter && coach !== coachFilter)) return;
     if (!groups[coach]) {
-      groups[coach] = { coach: coach, month: month, kids: 0, revenue: 0, pct: payoutPctByCoach[coach] || 0, payout: 0 };
+      groups[coach] = { coach: coach, month: month, kids: 0, revenue: 0, pct: blnoPayoutPctForCoach_(payoutPctByCoach, coach), payout: null };
     }
     groups[coach].kids++;
     groups[coach].revenue += blnoNumber_(m.pay) + blnoNumber_(m.due);
@@ -476,18 +608,27 @@ function blnoCoachRowsFromRoster_(month, coachFilter) {
 
   return Object.keys(groups).sort().map(function (coach) {
     var row = groups[coach];
-    row.payout = Math.round(row.revenue * row.pct);
+    row.payout = row.pct === null ? null : Math.round(row.revenue * row.pct);
     return row;
   });
 }
 
 function blnoPayoutPctByCoach_() {
   var pctByCoach = {};
+  var configured = BLNO_API.coachPayoutPct || {};
+  Object.keys(configured).forEach(function (coach) {
+    var pct = blnoPct_(configured[coach]);
+    if (pct !== null) pctByCoach[coach] = pct;
+  });
   var rows = blnoCoachPayRows_("all", "");
   rows.forEach(function (row) {
     if (row.coach && row.pct !== null && row.pct !== undefined) pctByCoach[row.coach] = row.pct;
   });
   return pctByCoach;
+}
+
+function blnoPayoutPctForCoach_(pctByCoach, coach) {
+  return Object.prototype.hasOwnProperty.call(pctByCoach, coach) ? pctByCoach[coach] : null;
 }
 
 function blnoCoachPayslipHistory_(auth) {
@@ -693,6 +834,35 @@ function blnoAppendAudit_(actor, action, target, scope, before, after, meta) {
   sheet.appendRow([new Date(), actor, action, target, scope, before, after, JSON.stringify(meta || {})]);
 }
 
+function blnoSettingsMap_() {
+  var sheet = blnoSheet_("Settings");
+  var settings = {};
+  if (!sheet) return settings;
+  var values = sheet.getDataRange().getValues();
+  for (var i = 1; i < values.length; i++) {
+    var key = String(values[i][0] || "").trim();
+    if (key) settings[key] = values[i][1];
+  }
+  return settings;
+}
+
+function blnoDefaultMonth_() {
+  var settings = blnoSettingsMap_();
+  return String(settings.defaultMonth || BLNO_API.currentMonth);
+}
+
+function blnoUpsertSetting_(sheet, key, value) {
+  var lastRow = sheet.getLastRow();
+  var values = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 2).getValues() : [];
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0] || "").trim() === key) {
+      sheet.getRange(i + 2, 2).setValue(value);
+      return;
+    }
+  }
+  sheet.appendRow([key, value]);
+}
+
 function blnoParseEntries_(entries) {
   if (!entries) return [];
   if (typeof entries === "string") {
@@ -714,6 +884,12 @@ function blnoDateKey_(value) {
 
 function blnoRequireAdmin_(auth) {
   if (auth.role !== "admin") throw new Error("Admin access required.");
+}
+
+function blnoRequireAttendanceActor_(auth, session) {
+  if (auth.role === "admin") return;
+  if (auth.role === "coach" && blnoCoachFromSession_(session) === auth.coach) return;
+  throw new Error("Attendance access required for this session.");
 }
 
 function blnoLogCall_(email, action) {

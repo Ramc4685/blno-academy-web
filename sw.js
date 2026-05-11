@@ -1,17 +1,22 @@
-const CACHE_NAME = "blno-academy-v2";
+const CACHE_NAME = "blno-academy-v3";
 const ASSETS = [
   "./",
   "./index.html",
   "./parent.html",
+  "./parent/child.html",
   "./parent/history/",
+  "./parent/schedule.html",
   "./coach.html",
   "./coach/payslip/",
+  "./coach/session.html",
+  "./coach/today.html",
   "./admin.html",
   "./admin/dues.html",
   "./admin/sessions.html",
   "./admin/coaches.html",
   "./admin/payments.html",
   "./admin/attendance.html",
+  "./admin/settings.html",
   "./css/styles.css",
   "./js/config.js",
   "./js/auth.js",
@@ -22,6 +27,7 @@ const ASSETS = [
   "./js/coach.js",
   "./js/admin.js",
   "./favicon.svg",
+  "./logo.svg",
   "./manifest.webmanifest"
 ];
 

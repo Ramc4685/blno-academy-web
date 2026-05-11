@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mark Attendance | BLno Badminton Academy</title>
+    <title>Settings | BlNo Badminton Academy</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../css/styles.css">
   </head>
@@ -14,44 +14,38 @@
         <a href="../admin.html">Dashboard</a>
         <a href="dues.html">Dues</a>
         <a href="sessions.html">Sessions</a>
-        <a href="coaches.html">Coaches</a>
         <a href="payments.html">Payments</a>
-        <a class="active" href="attendance.html">Attendance</a>
-        <a href="settings.html">Settings</a>
+        <a href="attendance.html">Attendance</a>
+        <a class="active" href="settings.html">Settings</a>
       </nav>
       <div class="user-chip"><span data-user-email></span><button data-sign-out>Sign out</button></div>
     </header>
-
     <main class="page">
       <section class="page-heading">
         <div>
-          <h1>Mark Attendance</h1>
-          <p>Write attendance rows to Attendance_Log with one row per kid.</p>
+          <h1>Settings</h1>
+          <p>Default month and mobile install guidance.</p>
         </div>
       </section>
-
       <section class="panel workflow-panel">
-        <form id="attendanceForm">
-          <div class="form-card">
+        <form id="settingsForm">
+          <section class="form-card">
+            <h2>Portal defaults</h2>
             <div class="form-grid">
-              <label>Date<input id="attendanceDate" type="date" required></label>
-              <label>Month<select id="attendanceMonth" required></select></label>
-              <label class="span-2">Session<select id="attendanceSession" required></select></label>
+              <label>Default current month<select id="settingsDefaultMonth" required></select></label>
+              <label>Zelle phone<input id="settingsZellePhone" type="tel" value="2488859243"></label>
             </div>
-          </div>
-          <div class="form-card">
-            <div class="panel-header">
-              <h2>Attendance Roster</h2>
-              <span id="attendanceProgress" class="tag">0 marked</span>
-            </div>
-            <div id="attendanceRows" class="attendance-roster"></div>
-            <button class="primary-action" type="submit">Save Attendance</button>
-          </div>
+            <button class="primary-action" type="submit">Save Settings</button>
+          </section>
         </form>
-        <div id="attendanceStatus" class="status-line"></div>
+        <section class="form-card">
+          <h2>Install on phone</h2>
+          <div id="installInstructions" class="meta-list"></div>
+          <button class="primary-action" type="button" data-install-app hidden>Install app</button>
+        </section>
+        <div id="settingsStatus" class="status-line"></div>
       </section>
     </main>
-
     <script src="../js/config.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/api.js"></script>

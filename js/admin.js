@@ -136,10 +136,19 @@
             <td>${UI.escapeHtml(row.month)}</td>
             <td>${UI.escapeHtml(row.kids)}</td>
             <td>${UI.money(row.revenue)}</td>
-            <td>${row.pct !== undefined ? `${Math.round(Number(row.pct) * 100)}%` : ""}</td>
-            <td>${UI.money(row.payout)}</td>
+            <td>${formatPayoutPct(row.pct)}</td>
+            <td>${formatPayout(row)}</td>
           </tr>`).join("")
       : `<tr><td colspan="6">${UI.emptyState("No coach payout rows found.")}</td></tr>`;
+  }
+
+  function formatPayoutPct(value) {
+    if (value === null || value === undefined || value === "") return "Set %";
+    return `${Math.round(Number(value) * 100)}%`;
+  }
+
+  function formatPayout(row) {
+    return row.pct === null || row.pct === undefined || row.pct === "" ? "Set payout %" : UI.money(row.payout);
   }
 
   async function loadAdminContext() {
@@ -298,7 +307,26 @@
 
   async function initAttendance() {
     const status = UI.byId("attendanceStatus");
-    const ctx = await loadAdminContext();
+    const me = await Api.get("me");
+    let ctx;
+    if (me.role === "coach") {
+      const month = window.BLNO_CONFIG.DEFAULT_MONTH;
+      const roster = await Api.get("coach_roster", { month });
+      ctx = {
+        months: [month],
+        sessions: (roster.sessions || []).map((session) => session.name),
+        kids: (roster.sessions || []).flatMap((session) => (session.enrolled || []).map((kid) => ({
+          name: kid.name,
+          session: session.name,
+          skill: "",
+          status: "Active",
+          monthly: [{ month: month, enrolled: true, paid: kid.paid ? 1 : 0, due: kid.paid ? 0 : 1 }]
+        })))
+      };
+      adminContext = ctx;
+    } else {
+      ctx = await loadAdminContext();
+    }
     populateSelect(UI.byId("attendanceMonth"), ctx.months);
     populateSelect(UI.byId("attendanceSession"), ctx.sessions);
     setSelectValue(UI.byId("attendanceMonth"), currentMonthFromContext(ctx));
@@ -327,12 +355,47 @@
     });
   }
 
+  function renderSettings(data) {
+    const month = UI.byId("settingsDefaultMonth");
+    if (month) {
+      month.innerHTML = (data.months || []).map((m) => `<option value="${UI.escapeHtml(m)}">${UI.escapeHtml(m)}</option>`).join("");
+      month.value = data.defaultMonth || window.BLNO_CONFIG.DEFAULT_MONTH;
+    }
+    const zelle = UI.byId("settingsZellePhone");
+    if (zelle) zelle.value = data.zellePhone || "2488859243";
+    const install = UI.byId("installInstructions");
+    if (install) {
+      install.innerHTML = (data.installInstructions || []).map((step, index) => `
+        <div><span>Step ${index + 1}</span><strong>${UI.escapeHtml(step)}</strong></div>`).join("");
+    }
+  }
+
+  async function initSettings() {
+    const status = UI.byId("settingsStatus");
+    renderSettings(await Api.get("admin_settings"));
+    UI.byId("settingsForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      status.textContent = "Saving settings...";
+      try {
+        const data = await Api.post("save_admin_settings", {
+          defaultMonth: UI.byId("settingsDefaultMonth").value,
+          zellePhone: UI.byId("settingsZellePhone").value
+        });
+        renderSettings(data);
+        status.textContent = "Settings saved. New API calls will use this default month when no month is selected.";
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+  }
+
   async function load() {
     const target = path.includes("dues") ? "duesRows"
       : path.includes("sessions") ? "adminSessions"
       : path.includes("coaches") ? "coachPayoutRows"
       : path.includes("payments") ? "paymentStatus"
       : path.includes("attendance") ? "attendanceStatus"
+      : path.includes("settings") ? "settingsStatus"
       : "adminStats";
     if (UI.renderSetup(target)) return;
     try {
@@ -347,6 +410,8 @@
         await initPayments();
       } else if (path.includes("attendance")) {
         await initAttendance();
+      } else if (path.includes("settings")) {
+        await initSettings();
       } else {
         renderDashboard(await Api.get("admin_dashboard", { month: defaultMonthFromInput("adminMonth") }));
       }

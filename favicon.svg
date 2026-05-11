@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="10" fill="#FFF2CC"/>
-  <text x="32" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#1F4E78">B</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="BlNo Badminton Academy">
+  <rect width="64" height="64" rx="14" fill="#101b2f"/>
+  <circle cx="32" cy="32" r="22" fill="#74cdf2"/>
+  <text x="32" y="42" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900" fill="#006b88">B</text>
+  <path d="M43 13c4 3 6 7 7 12l8-4-4 8c5 1 9 3 12 7-9 1-15-1-19-5-4-4-5-10-4-18Z" fill="#fff2cc" stroke="#006b88" stroke-width="2" stroke-linejoin="round"/>
 </svg>
